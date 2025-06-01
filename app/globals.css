@@ -1,26 +1,158 @@
 @import "tailwindcss";
 
+/* Dark Techy Theme Variables */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --background: #10131a;
+  --foreground: #e0e6ed;
+  --primary: #0ff1ce;
+  --secondary: #1e293b;
+  --accent: #7f5af0;
+  --danger: #ff5470;
+  --success: #2ec4b6;
+  --card-bg: #181c25;
+  --border: #23283a;
+  --input-bg: #23283a;
+  --input-border: #2d334d;
+  --input-focus: #0ff1ce;
+  --shadow: 0 4px 32px 0 rgba(0,0,0,0.45);
+  --font-sans: var(--font-geist-sans, 'Inter', 'Segoe UI', Arial, sans-serif);
+  --font-mono: var(--font-geist-mono, 'Fira Mono', 'Menlo', monospace);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans);
+  min-height: 100vh;
+  letter-spacing: 0.01em;
+  transition: background 0.3s, color 0.3s;
+}
+
+/* Card style for containers */
+.card {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 1.2rem;
+  box-shadow: var(--shadow);
+  padding: 2rem;
+  margin-bottom: 2rem;
+}
+
+/* Headings */
+h1, h2, h3, h4, h5, h6 {
+  color: var(--primary);
+  font-family: var(--font-sans);
+  font-weight: 700;
+  letter-spacing: 0.03em;
+}
+
+/* Accent text */
+.accent {
+  color: var(--accent);
+}
+
+/* Buttons */
+button, .btn {
+  background: linear-gradient(90deg, var(--primary) 0%, var(--accent) 100%);
+  color: #10131a;
+  border: none;
+  border-radius: 0.7rem;
+  padding: 0.7rem 1.5rem;
+  font-weight: 600;
+  font-size: 1rem;
+  box-shadow: 0 2px 12px 0 rgba(127,90,240,0.15);
+  transition: background 0.2s, color 0.2s, box-shadow 0.2s;
+  cursor: pointer;
+}
+button:hover, .btn:hover {
+  background: linear-gradient(90deg, var(--accent) 0%, var(--primary) 100%);
+  color: #fff;
+  box-shadow: 0 4px 24px 0 rgba(15,241,206,0.15);
+}
+
+/* Inputs */
+input, select, textarea {
+  background: var(--input-bg);
+  color: var(--foreground);
+  border: 1.5px solid var(--input-border);
+  border-radius: 0.5rem;
+  padding: 0.7rem 1rem;
+  font-size: 1rem;
+  margin-bottom: 1rem;
+  outline: none;
+  transition: border 0.2s, box-shadow 0.2s;
+  font-family: var(--font-sans);
+}
+input:focus, select:focus, textarea:focus {
+  border-color: var(--input-focus);
+  box-shadow: 0 0 0 2px var(--primary);
+}
+
+/* Error text */
+.text-red-500, .error {
+  color: var(--danger) !important;
+  font-weight: 500;
+}
+
+/* Success text */
+.text-green-500, .success {
+  color: var(--success) !important;
+  font-weight: 500;
+}
+
+/* SVG Graphs */
+svg {
+  background: var(--secondary);
+  border-radius: 1rem;
+  box-shadow: 0 2px 12px 0 rgba(15,241,206,0.05);
+}
+
+/* Profile Skill Pills */
+.skill-pill {
+  background: linear-gradient(90deg, var(--accent) 0%, var(--primary) 100%);
+  color: #10131a;
+  padding: 0.3rem 1rem;
+  border-radius: 999px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  margin-right: 0.5rem;
+  margin-bottom: 0.5rem;
+  display: inline-block;
+  box-shadow: 0 1px 6px 0 rgba(127,90,240,0.10);
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 10px;
+  background: var(--secondary);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--accent);
+  border-radius: 8px;
+}
+
+/* Utility classes for spacing and layout overrides */
+.mt-10 { margin-top: 2.5rem !important; }
+.mx-auto { margin-left: auto !important; margin-right: auto !important; }
+.max-w-sm { max-width: 24rem !important; }
+.max-w-2xl { max-width: 42rem !important; }
+.p-6 { padding: 1.5rem !important; }
+.rounded { border-radius: 1rem !important; }
+.shadow { box-shadow: var(--shadow) !important; }
+.flex { display: flex !important; }
+.gap-4 { gap: 1rem !important; }
+.gap-2 { gap: 0.5rem !important; }
+.flex-col { flex-direction: column !important; }
+.flex-wrap { flex-wrap: wrap !important; }
+.items-center { align-items: center !important; }
+.justify-between { justify-content: space-between !important; }
+
+/* Responsive tweaks */
+@media (max-width: 600px) {
+  .card, .max-w-2xl, .max-w-sm {
+    padding: 1rem !important;
+    border-radius: 0.7rem !important;
+  }
+  h1 { font-size: 1.5rem !important; }
+  h2 { font-size: 1.2rem !important; }
 }
