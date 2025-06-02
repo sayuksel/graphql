@@ -22,12 +22,12 @@ export default function ProfilePage() {
   const [profile, setProfile] = useState<typeof sampleProfile | null>(null);
 
   useEffect(() => {
-    // Check for JWT
+    
     if (!getToken()) {
       router.replace("/login");
       return;
     }
-    // Simulate fetching profile data from GraphQL API
+
     setProfile(sampleProfile);
   }, [router]);
 
