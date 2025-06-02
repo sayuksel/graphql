@@ -2,51 +2,148 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getToken, signOut } from "@/lib/auth";
+import { graphqlQuery } from "@/lib/graphql";
+import { GET_USER_PROFILE, GET_XP_TRANSACTIONS, GET_PROGRESS, GET_RESULTS } from "@/lib/queries";
+import { User, Transaction, Progress, Result } from "@/lib/types";
+import { processXPData, calculatePassFailRatio, extractSkills, calculateAuditRatio } from "@/lib/dataProcessing";
 
-// Dummy data for demonstration
-const sampleProfile = {
-  name: "Jane Doe",
-  xp: [100, 200, 350, 500, 700],
-  grades: [80, 85, 90, 95, 100],
-  auditRatio: 0.92,
-  skills: ["GraphQL", "React", "TypeScript"],
-  projects: [
-    { name: "Project A", passed: true },
-    { name: "Project B", passed: false },
-    { name: "Project C", passed: true },
-  ],
-};
+interface ProfileData {
+  user: User;
+  xpData: Array<{ date: Date; amount: number; cumulative: number; project: string }>;
+
+  passFailRatio: { passed: number; failed: number; total: number; passRate: number };
+  skills: string[];
+  auditRatio: number;
+  totalXP: number;
+}
 
 export default function ProfilePage() {
   const router = useRouter();
-  const [profile, setProfile] = useState<typeof sampleProfile | null>(null);
+  const [profile, setProfile] = useState<ProfileData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string>("");
 
   useEffect(() => {
-    
     if (!getToken()) {
       router.replace("/login");
       return;
     }
-
-    setProfile(sampleProfile);
+    fetchProfileData();
   }, [router]);
 
-  if (!profile) return <div className="text-center mt-10">Loading...</div>;
+  async function fetchProfileData() {
+    try {
+      setLoading(true);
+      setError("");
 
-  // SVG: XP over time (line graph)
-  const xpPoints = profile.xp.map((xp, i) => `${i * 50},${120 - xp / 10}`).join(" ");
-  // SVG: Pass/fail ratio (pie chart)
-  const passCount = profile.projects.filter(p => p.passed).length;
-  const failCount = profile.projects.length - passCount;
-  const passAngle = (passCount / profile.projects.length) * 360;
+      const userData = await graphqlQuery<{ user: User[] }>(GET_USER_PROFILE);
+      
+      if (!userData.user || userData.user.length === 0) {
+        throw new Error("User not found");
+      }
+
+      const user = userData.user[0];
+      const userId = user.id;
+
+      const [xpData, progressData, resultsData] = await Promise.all([
+        graphqlQuery<{ transaction: Transaction[] }>(GET_XP_TRANSACTIONS, { userId }),
+        graphqlQuery<{ progress: Progress[] }>(GET_PROGRESS, { userId }),
+        graphqlQuery<{ result: Result[] }>(GET_RESULTS, { userId })
+      ]);
+
+      const xpTransactions = xpData.transaction || [];
+      const progress = progressData.progress || [];
+      const results = resultsData.result || [];
+
+      const processedXP = processXPData(xpTransactions);
+      const passFailRatio = calculatePassFailRatio(progress);
+      const skills = extractSkills(progress, results);
+      const auditRatio = calculateAuditRatio(xpTransactions);
+      const totalXP = processedXP.length > 0 ? processedXP[processedXP.length - 1].cumulative : 0;
+
+      setProfile({
+        user,
+        xpData: processedXP,
+        passFailRatio,
+        skills,
+        auditRatio,
+        totalXP
+      });
+
+    } catch (err: any) {
+      console.error("Error loading profile:", err);
+      
+      if (err.message.includes('Authentication') || err.message.includes('log in again')) {
+        signOut();
+        router.replace("/login");
+        return;
+      }
+      
+      setError(err.message || "Failed to load profile");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="max-w-2xl mx-auto mt-10 p-6">
+        <div className="animate-pulse">
+          <div className="h-8 bg-gray-200 rounded mb-4"></div>
+          <div className="h-4 bg-gray-200 rounded mb-2"></div>
+          <div className="h-4 bg-gray-200 rounded mb-2"></div>
+          <div className="h-64 bg-gray-200 rounded"></div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="max-w-2xl mx-auto mt-10 p-6 bg-red-50 border border-red-200 rounded">
+        <h2 className="text-red-800 font-semibold mb-2">Error loading profile</h2>
+        <p className="text-red-600">{error}</p>
+        <div className="mt-4 flex gap-2">
+          <button 
+            onClick={fetchProfileData}
+            className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"
+          >
+            Retry
+          </button>
+          <button 
+            onClick={() => {
+              signOut();
+              router.replace("/login");
+            }}
+            className="bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700"
+          >
+            Login Again
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (!profile) return null;
+
+  // Chart calculations
+  const maxXP = Math.max(...profile.xpData.map(d => d.cumulative));
+  const xpPoints = profile.xpData.map((data, i) => {
+    const x = (i / (profile.xpData.length - 1)) * 200;
+    const y = 120 - (data.cumulative / maxXP) * 100;
+    return `${x},${y}`;
+  }).join(" ");
+
+  const { passed, total } = profile.passFailRatio;
+  const passAngle = total > 0 ? (passed / total) * 360 : 0;
   const failAngle = 360 - passAngle;
 
   return (
-    <div className="max-w-2xl mx-auto mt-10 p-6 bg-white rounded shadow">
+    <div className="max-w-4xl mx-auto mt-10 p-6 bg-white rounded shadow">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Welcome, {profile.name}</h1>
+        <h1 className="text-2xl font-bold">Welcome, {profile.user.login}</h1>
         <button
-          className="bg-red-500 text-white px-4 py-2 rounded"
+          className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600"
           onClick={() => {
             signOut();
             router.replace("/login");
@@ -56,6 +153,23 @@ export default function ProfilePage() {
         </button>
       </div>
 
+      {/* Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+        <div className="bg-blue-50 p-4 rounded">
+          <h3 className="font-semibold text-blue-800">Total XP</h3>
+          <p className="text-2xl font-bold text-blue-600">{profile.totalXP.toLocaleString()}</p>
+        </div>
+        <div className="bg-green-50 p-4 rounded">
+          <h3 className="font-semibold text-green-800">Pass Rate</h3>
+          <p className="text-2xl font-bold text-green-600">{profile.passFailRatio.passRate.toFixed(1)}%</p>
+        </div>
+        <div className="bg-purple-50 p-4 rounded">
+          <h3 className="font-semibold text-purple-800">Audit Ratio</h3>
+          <p className="text-2xl font-bold text-purple-600">{(profile.auditRatio * 100).toFixed(1)}%</p>
+        </div>
+      </div>
+
+      {/* Skills */}
       <div className="mb-6">
         <h2 className="font-semibold mb-2">Skills</h2>
         <div className="flex gap-2 flex-wrap">
@@ -67,37 +181,39 @@ export default function ProfilePage() {
         </div>
       </div>
 
+      {/* Charts */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        {/* XP Over Time Graph */}
         <div>
-          <h2 className="font-semibold mb-2">XP Over Time</h2>
-          <svg width="220" height="130" className="bg-gray-50 rounded">
-            <polyline
-              fill="none"
-              stroke="#3b82f6"
-              strokeWidth="3"
-              points={xpPoints}
-            />
-            {profile.xp.map((xp, i) => (
+          <h2 className="font-semibold mb-2">XP Progress</h2>
+          <svg width="220" height="130" className="bg-gray-50 rounded p-2">
+            {profile.xpData.length > 1 && (
+              <polyline
+                fill="none"
+                stroke="#3b82f6"
+                strokeWidth="2"
+                points={xpPoints}
+              />
+            )}
+            {profile.xpData.map((data, i) => (
               <circle
                 key={i}
-                cx={i * 50}
-                cy={120 - xp / 10}
-                r="4"
+                cx={(i / (profile.xpData.length - 1)) * 200}
+                cy={120 - (data.cumulative / maxXP) * 100}
+                r="3"
                 fill="#3b82f6"
-              />
+              >
+                <title>{`${data.project}: ${data.cumulative} XP`}</title>
+              </circle>
             ))}
-            <text x="0" y="125" fontSize="10" fill="#888">0</text>
-            <text x="200" y="125" fontSize="10" fill="#888">Time</text>
-            <text x="0" y="15" fontSize="10" fill="#888">XP</text>
+            <text x="5" y="125" fontSize="10" fill="#888">0</text>
+            <text x="180" y="125" fontSize="10" fill="#888">Time</text>
+            <text x="5" y="15" fontSize="10" fill="#888">{maxXP}</text>
           </svg>
         </div>
 
-        {/* Pass/Fail Pie Chart */}
         <div>
-          <h2 className="font-semibold mb-2">Project Pass/Fail Ratio</h2>
+          <h2 className="font-semibold mb-2">Pass/Fail Ratio</h2>
           <svg width="120" height="120" viewBox="0 0 32 32">
-            {/* Pass slice */}
             <circle
               r="16"
               cx="16"
@@ -108,7 +224,6 @@ export default function ProfilePage() {
               strokeDasharray={`${passAngle} 360`}
               transform="rotate(-90 16 16)"
             />
-            {/* Fail slice */}
             <circle
               r="16"
               cx="16"
@@ -120,28 +235,14 @@ export default function ProfilePage() {
               strokeDashoffset={-passAngle}
               transform="rotate(-90 16 16)"
             />
-            <text x="16" y="18" textAnchor="middle" fontSize="10" fill="#333">
-              {passCount} / {profile.projects.length} Passed
+            <text x="16" y="18" textAnchor="middle" fontSize="8" fill="#333">
+              {profile.passFailRatio.passed}/{profile.passFailRatio.total}
             </text>
           </svg>
+          <p className="text-sm text-gray-600 mt-2">
+            {profile.passFailRatio.passed} passed, {profile.passFailRatio.failed} failed
+          </p>
         </div>
-      </div>
-
-      <div className="mt-8">
-        <h2 className="font-semibold mb-2">Grades</h2>
-        <div className="flex gap-4">
-          {profile.grades.map((grade, i) => (
-            <div key={i} className="flex flex-col items-center">
-              <span className="text-lg font-bold">{grade}</span>
-              <span className="text-xs text-gray-500">Test {i + 1}</span>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <div className="mt-8">
-        <h2 className="font-semibold mb-2">Audit Ratio</h2>
-        <div className="text-xl">{(profile.auditRatio * 100).toFixed(1)}%</div>
       </div>
     </div>
   );

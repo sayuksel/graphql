@@ -38,7 +38,8 @@ This project is a **personal profile dashboard** that leverages GraphQL to fetch
 
 ```bash
 # Clone the repository
-git clone <repository-url>
+git clone 
+https://learn.reboot01.com/git/sayuksel/graphql.git
 cd graphql
 
 # Install dependencies
