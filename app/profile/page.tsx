@@ -182,9 +182,9 @@ export default function ProfilePage() {
       </div>
 
       {/* Charts */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        <div>
-          <h2 className="font-semibold mb-2">XP Progress</h2>
+      <div className="max-w-5xl mx-auto mt-10 grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div className="rpg-block">
+          <h2 className="font-semibold mb-2 accent">XP Progress</h2>
           <svg width="220" height="130" className="bg-gray-50 rounded p-2">
             {profile.xpData.length > 1 && (
               <polyline
@@ -211,8 +211,8 @@ export default function ProfilePage() {
           </svg>
         </div>
 
-        <div>
-          <h2 className="font-semibold mb-2">Pass/Fail Ratio</h2>
+        <div className="rpg-block">
+          <h2 className="font-semibold mb-2 accent">Pass/Fail Ratio</h2>
           <svg width="120" height="120" viewBox="0 0 32 32">
             <circle
               r="16"
@@ -242,6 +242,24 @@ export default function ProfilePage() {
           <p className="text-sm text-gray-600 mt-2">
             {profile.passFailRatio.passed} passed, {profile.passFailRatio.failed} failed
           </p>
+        </div>
+
+        <div className="rpg-block">
+          <h2 className="font-semibold mb-2 accent">Skills</h2>
+          <div className="flex gap-2 flex-wrap">
+            {profile.skills.map(skill => (
+              <span key={skill} className="skill-pill">{skill}</span>
+            ))}
+          </div>
+        </div>
+
+        <div className="rpg-block">
+          <h2 className="font-semibold mb-2 accent">Stats</h2>
+          <div className="grid grid-cols-1 gap-2">
+            <div><span className="accent">Total XP:</span> {profile.totalXP.toLocaleString()}</div>
+            <div><span className="accent">Pass Rate:</span> {profile.passFailRatio.passRate.toFixed(1)}%</div>
+            <div><span className="accent">Audit Ratio:</span> {(profile.auditRatio * 100).toFixed(1)}%</div>
+          </div>
         </div>
       </div>
     </div>

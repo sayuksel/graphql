@@ -1,13 +1,10 @@
 export async function signIn(email: string, password: string) {
-    // Fix: Remove double slash and use correct endpoint
     const response = await fetch("/api/auth/signin", {
         method: "POST",
         headers: { 
             "Content-Type": "application/json",
-            // Use Basic authentication as specified in the requirements
             "Authorization": `Basic ${btoa(`${email}:${password}`)}`
         },
-        // Remove body since we're using Basic auth
     }); 
 
     if (!response.ok) {

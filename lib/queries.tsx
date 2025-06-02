@@ -2,6 +2,8 @@ export const GET_USER_PROFILE = `
   query GetUserProfile {
     user {
       id
+      firstName
+      lastName
       login
       email
     }
