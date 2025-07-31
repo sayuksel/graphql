@@ -3,7 +3,8 @@ export interface User {
   firstName: string;
   lastName: string;
   login: string;
-  email?: string;
+  createdAt: string; // Changed from dateJoined to match the GraphQL query
+  email?: string; // Made optional since it might not always be present
 }
 
 export interface Transaction {
@@ -48,4 +49,14 @@ export interface ProfileData {
   xpTransactions: Transaction[];
   progress: Progress[];
   results: Result[];
+}
+
+export interface AuditsMade {
+  amount: number;
+  createdAt: string;
+}
+
+export interface AuditsGot {
+  amount: number;
+  createdAt: string;
 }
