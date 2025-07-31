@@ -3,8 +3,8 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getToken, signOut } from "@/lib/auth";
 import { graphqlQuery } from "@/lib/graphql";
-import { GET_USER_PROFILE, GET_XP_TRANSACTIONS, GET_PROGRESS, GET_RESULTS, AUDITS_MADE, AUDITS_GOT } from "@/lib/queries";
-import { User, Transaction, Progress, Result, AuditsMade, AuditsGot } from "@/lib/types";
+import { GET_USER_PROFILE, GET_XP_TRANSACTIONS, GET_PROGRESS, AUDITS_MADE, AUDITS_GOT } from "@/lib/queries";
+import { User, Transaction, Progress, AuditsMade, AuditsGot } from "@/lib/types";
 import { processXPData, calculatePassFailRatio, extractSkills, calculateAuditRatio } from "@/lib/dataProcessing";
 
 interface ProfileData {
@@ -51,7 +51,6 @@ export default function ProfilePage() {
       const [xpData, progressData, auditsMadeData, auditsGotData] = await Promise.all([
         graphqlQuery<{ transaction: Transaction[] }>(GET_XP_TRANSACTIONS, { userId }),
         graphqlQuery<{ progress: Progress[] }>(GET_PROGRESS, { userId }),
-        // graphqlQuery<{ result: Result[] }>(GET_RESULTS, { userId }), // not being used
         graphqlQuery<{ transaction: AuditsMade[] }>(AUDITS_MADE, { login: user.login }), // returns transaction array
         graphqlQuery<{ transaction: AuditsGot[] }>(AUDITS_GOT, { login: user.login }) // returns transaction array
       ]);
