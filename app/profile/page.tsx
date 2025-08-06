@@ -73,7 +73,8 @@ export default function ProfilePage() {
       }, 0);
       
       console.log("Audits Made Total Amount:", auditsMadeTotalAmount);
-      console.log("Audits Got Total Amount:", auditsGotTotalAmount);      const auditsMadeLength = Array.isArray(auditsMade) ? auditsMade.length : 0;
+      console.log("Audits Got Total Amount:", auditsGotTotalAmount);      
+      const auditsMadeLength = Array.isArray(auditsMade) ? auditsMade.length : 0;
       const auditsGotLength = Array.isArray(auditsGot) ? auditsGot.length : 0;
 
       console.log("Audits Made:", auditsMade);
@@ -480,9 +481,15 @@ export default function ProfilePage() {
               <text x="20" y="385" fontSize="14" fill="rgba(255,255,255,0.7)">0</text>
             </svg>
             <div className="mt-4 text-sm text-gray-300">
-              <div className="flex justify-between items-center">
-                <span>Current ratio: <strong className="text-purple-400">{profile.auditRatio.toFixed(2)}</strong></span>
-                <span>Total audits: <strong className="text-pink-400">{profile.auditsMade.length + profile.auditsGot.length}</strong></span>
+              <div className="space-y-2">
+                <div className="flex justify-between items-center">
+                  <span>Total audits made: <strong className="text-pink-400">{profile.auditsMade.length}</strong></span>
+                  <span>Total audits got: <strong className="text-pink-400">{profile.auditsGot.length}</strong></span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span>Current ratio: <strong className="text-purple-400">{profile.auditRatio.toFixed(2)}</strong></span>
+                  <span>Total audits: <strong className="text-pink-400">{profile.auditsMade.length + profile.auditsGot.length}</strong></span>
+                </div>
               </div>
               {auditRatioData.length > 20 && (
                 <p className="text-purple-400 text-xs mt-1">Showing last 20 audit points</p>
