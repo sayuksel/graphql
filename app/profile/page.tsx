@@ -98,8 +98,6 @@ export default function ProfilePage() {
 
       const processedXP = processXPData(xpTransactions); // to get the right format for the profile data
       console.log("Processed XP Data:", processedXP);
-      const passFailRatio = calculatePassFailRatio(progress); // isnt this just audit ratio?
-      console.log("Pass/Fail Ratio:", passFailRatio);
       const skills = extractSkills(progress); // might just remove the whole thing
       console.log("Extracted Skills:", skills);
       const auditRatio = calculateAuditRatio(auditsMadeTotalAmount, auditsGotTotalAmount); // need to fix this info
@@ -227,10 +225,6 @@ export default function ProfilePage() {
     const y = 380 - (data.ratio / maxRatio) * 360; // Full height
     return `${x},${y}`;
   }).join(" ");
-
-  // const { passed, total } = profile.passFailRatio;
-  // const passAngle = total > 0 ? (passed / total) * 360 : 0;
-  // const failAngle = 360 - passAngle;
 
   return (
     <div className="min-h-screen p-6">
@@ -371,18 +365,18 @@ export default function ProfilePage() {
               )}
               
               {/* Axis labels */}
-              <text x="20" y="390" fontSize="14" fill="rgba(255,255,255,0.7)">Start</text>
-              <text x="420" y="390" fontSize="14" fill="rgba(255,255,255,0.7)">Recent</text>
+              <text x="10" y="390" fontSize="14" fill="rgba(255,255,255,0.7)">Start</text>
+              <text x="440" y="390" fontSize="14" fill="rgba(255,255,255,0.7)">Recent</text>
               <text x="20" y="25" fontSize="14" fill="rgba(255,255,255,0.7)">{maxXP}</text>
-              <text x="20" y="385" fontSize="14" fill="rgba(255,255,255,0.7)">0</text>
+              <text x="20" y="375" fontSize="14" fill="rgba(255,255,255,0.7)">0</text>
             </svg>
             <div className="mt-4 text-sm text-gray-300">
               <div className="flex justify-between items-center">
-                <span>Total XP: <strong className="text-blue-400">{profile.totalXP.toLocaleString()}</strong></span>
-                <span>Projects: <strong className="text-purple-400">{profile.xpData.length}</strong></span>
+                <span>Total XP: <strong className="text-pink-400">{profile.totalXP.toLocaleString()}</strong></span>
+                <span>Projects: <strong className="text-pink-400">{profile.xpData.length}</strong></span>
               </div>
               {profile.xpData.length > 20 && (
-                <p className="text-blue-400 text-xs mt-1">Showing last 20 projects</p>
+                <p className="text-pink-400 text-xs mt-1">Showing last 20 projects</p>
               )}
             </div>
           </div>
@@ -475,10 +469,10 @@ export default function ProfilePage() {
               )}
               
               {/* Axis labels */}
-              <text x="20" y="390" fontSize="14" fill="rgba(255,255,255,0.7)">Start</text>
-              <text x="420" y="390" fontSize="14" fill="rgba(255,255,255,0.7)">Recent</text>
-              <text x="20" y="25" fontSize="14" fill="rgba(255,255,255,0.7)">{maxRatio.toFixed(1)}</text>
-              <text x="20" y="385" fontSize="14" fill="rgba(255,255,255,0.7)">0</text>
+              <text x="10" y="390" fontSize="14" fill="rgba(255,255,255,0.7)">Start</text>
+              <text x="440" y="390" fontSize="14" fill="rgba(255,255,255,0.7)">Recent</text>
+              <text x="20" y="25" fontSize="14" fill="rgba(255,255,255,0.7)">{profile.auditRatio.toFixed(1)}</text>
+              <text x="20" y="375" fontSize="14" fill="rgba(255,255,255,0.7)">0</text>
             </svg>
             <div className="mt-4 text-sm text-gray-300">
               <div className="space-y-2">
@@ -487,12 +481,12 @@ export default function ProfilePage() {
                   <span>Total audits got: <strong className="text-pink-400">{profile.auditsGot.length}</strong></span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span>Current ratio: <strong className="text-purple-400">{profile.auditRatio.toFixed(2)}</strong></span>
+                  <span>Current ratio: <strong className="text-pink-400">{profile.auditRatio.toFixed(1)}</strong></span>
                   <span>Total audits: <strong className="text-pink-400">{profile.auditsMade.length + profile.auditsGot.length}</strong></span>
                 </div>
               </div>
               {auditRatioData.length > 20 && (
-                <p className="text-purple-400 text-xs mt-1">Showing last 20 audit points</p>
+                <p className="text-pink-400 text-xs mt-1">Showing last 20 audit points</p>
               )}
             </div>
           </div>
