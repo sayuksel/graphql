@@ -12,11 +12,9 @@ export default function LoginPage() {
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
     setError("");
-    console.log("Logging in with:", { identifier, password });
     try {
       await signIn(identifier, password);
       router.push("/profile");
-      console.log("Logging in with:", localStorage.getItem("jwt"));
     } catch (err: any) {
       setError(err.message || "Login failed");
     }

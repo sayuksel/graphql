@@ -3,15 +3,15 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getToken, signOut } from "@/lib/auth";
 import { graphqlQuery } from "@/lib/graphql";
-import { GET_USER_PROFILE, GET_XP_TRANSACTIONS, GET_PROGRESS, AUDITS_MADE, AUDITS_GOT } from "@/lib/queries";
-import { User, Transaction, Progress, AuditsMade, AuditsGot } from "@/lib/types";
-import { processXPData, calculatePassFailRatio, extractSkills, calculateAuditRatio } from "@/lib/dataProcessing";
+import { GET_USER_PROFILE, GET_XP_TRANSACTIONS, AUDITS_MADE, AUDITS_GOT } from "@/lib/queries";
+import { User, Transaction, AuditsMade, AuditsGot } from "@/lib/types";
+import { calculateAuditRatio, processAuditTimeSeriesData, processCompleteXPData } from "@/lib/dataProcessing";
 
 interface ProfileData {
   user: User;
   xpData: Array<{ date: Date; amount: number; cumulative: number; project: string }>;
   auditRatio: number;
-  totalXP: number;
+  totalXP: string;
   auditsMade: AuditsMade[];
   auditsGot: AuditsGot[];
 }
@@ -46,17 +46,11 @@ export default function ProfilePage() {
       const user = userData.user[0];
       const userId = user.id;
 
-      console.log("User data:", userData);
-
-      const [xpData, progressData, auditsMadeData, auditsGotData] = await Promise.all([
+      const [xpData, auditsMadeData, auditsGotData] = await Promise.all([
         graphqlQuery<{ transaction: Transaction[] }>(GET_XP_TRANSACTIONS, { userId }),
-        graphqlQuery<{ progress: Progress[] }>(GET_PROGRESS, { userId }),
         graphqlQuery<{ transaction: AuditsMade[] }>(AUDITS_MADE, { login: user.login }), 
         graphqlQuery<{ transaction: AuditsGot[] }>(AUDITS_GOT, { login: user.login })
       ]);
-
-      console.log("Raw audits made data:", auditsMadeData);
-      console.log("Raw audits got data:", auditsGotData);
 
       // Extract data based on actual query structure
       const auditsMade = auditsMadeData?.transaction || [];
@@ -72,51 +66,20 @@ export default function ProfilePage() {
         return total + (audit.amount || 0);
       }, 0);
         
-      let xpTransactions = xpData.transaction || [];
-      xpTransactions = xpTransactions.map(tx => ({
-        ...tx, 
-        amount: tx.amount
-      }));
+      const xpTransactions = xpData.transaction || [];
 
-      let totalXP = xpTransactions.reduce((acc, tx) => acc + tx.amount, 0);
-      let value = "";
-      switch (true) {
-        case (totalXP >= 0 && totalXP < 1000):
-          value = "B";
-          break;
-        case (totalXP >= 1000 && totalXP <= 999999):
-          totalXP /= 1000; // Convert to KB
-          value = "KB";
-          break;
-        case (totalXP >= 1000000 && totalXP <= 999999999):
-          totalXP /= 1000000; // Convert to MB
-          value = "MB";
-          break;
-        // Can add more cases for GB, TB, etc. if needed
-        default:
-          throw new Error("Total XP is out of expected range");
-      }
-      console.log("Total XP (value):", value);
-      totalXP = Math.floor(totalXP);
-      let totalXPStr = totalXP.toLocaleString();
-      console.log("Total XP (1):", totalXPStr);
-      totalXPStr += ` ${value}`;
-      console.log("Total XP (2):", totalXPStr);
+      // Process XP data with unit conversion using the utility function
+      const xpProcessingResult = processCompleteXPData(xpTransactions);
 
-      const progress = progressData.progress || [];
-      console.log("Progress Data:", progress);
-      const processedXP = processXPData(xpTransactions); // to get the right format for the profile data
-      console.log("Processed XP Data:", processedXP);
       const auditRatio = calculateAuditRatio(auditsMadeTotalAmount, auditsGotTotalAmount);
-      console.log("Audit Ratio:", auditRatio);
       
 
 
       setProfile({
         user,
-        xpData: processedXP,
+        xpData: xpProcessingResult.processedData,
         auditRatio: parseFloat(auditRatio),
-        totalXP,
+        totalXP: xpProcessingResult.totalXPFormatted,
         auditsMade,
         auditsGot
       });
@@ -189,39 +152,8 @@ export default function ProfilePage() {
     return `${x},${y}`;
   }).join(" ");
 
-  // Process audit data for the time-based graph
-  const processAuditData = () => {
-    // Combine and sort all audit transactions by date
-    const allAudits = [
-      ...profile.auditsMade.map(audit => ({ ...audit, type: 'made' as const })),
-      ...profile.auditsGot.map(audit => ({ ...audit, type: 'got' as const }))
-    ].sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
-
-    // Calculate running totals and ratios
-    let runningMade = 0;
-    let runningGot = 0;
-    const auditRatioData: Array<{ date: Date; ratio: number; made: number; got: number }> = [];
-
-    allAudits.forEach(audit => {
-      if (audit.type === 'made') {
-        runningMade += Math.abs(audit.amount);
-      } else {
-        runningGot += audit.amount;
-      }
-      
-      const ratio = runningMade > 0 ? runningGot / runningMade : 0;
-      auditRatioData.push({
-        date: new Date(audit.createdAt),
-        ratio,
-        made: runningMade,
-        got: runningGot
-      });
-    });
-
-    return auditRatioData;
-  };
-
-  const auditRatioData = processAuditData();
+  // Process audit data for the time-based graph using the utility function
+  const auditRatioData = processAuditTimeSeriesData(profile.auditsMade, profile.auditsGot);
   // Show only the most recent 20 audit points to avoid compression
   const displayedAuditData = auditRatioData.length > 20 
     ? auditRatioData.slice(-20) 
@@ -259,7 +191,7 @@ export default function ProfilePage() {
         <div className="dashboard-grid slide-up">
           <div className="stat-card xp-card">
             <h3>Total Experience Points</h3>
-            <div className="stat-value xp">{profile.totalXP.toLocaleString()}</div>
+            <div className="stat-value xp">{profile.totalXP}</div>
             <p className="text-gray-400 mt-2">XP earned across all projects</p>
           </div>
           <div className="stat-card audit-card">
@@ -340,7 +272,7 @@ export default function ProfilePage() {
                       <rect
                         x="20"
                         y="20"
-                        width="160"
+                        width="170"
                         height="85"
                         fill="rgba(0,0,0,0.9)"
                         rx="10"
@@ -374,16 +306,16 @@ export default function ProfilePage() {
               {/* Axis labels */}
               <text x="10" y="390" fontSize="14" fill="rgba(255,255,255,0.7)">Start</text>
               <text x="440" y="390" fontSize="14" fill="rgba(255,255,255,0.7)">Recent</text>
-              <text x="20" y="25" fontSize="14" fill="rgba(255,255,255,0.7)">{maxXP}</text>
+              <text x="20" y="25" fontSize="14" fill="rgba(255,255,255,0.7)">{profile.totalXP}</text>
               <text x="20" y="375" fontSize="14" fill="rgba(255,255,255,0.7)">0</text>
             </svg>
             <div className="mt-4 text-sm text-gray-300">
               <div className="flex justify-between items-center">
-                <span>Total XP: <strong className="text-pink-400">{profile.totalXP.toLocaleString()}</strong></span>
+                <span>Total XP: <strong className="text-pink-400">{profile.totalXP}</strong></span>
                 <span>Projects: <strong className="text-pink-400">{profile.xpData.length}</strong></span>
               </div>
               {profile.xpData.length > 20 && (
-                <p className="text-pink-400 text-xs mt-1">Showing last 20 projects</p>
+                <p className="text-pink-400 text-xs mt-1">Showing only last 20 projects</p>
               )}
             </div>
           </div>
@@ -449,7 +381,7 @@ export default function ProfilePage() {
                       <rect
                         x="20"
                         y="20"
-                        width="140"
+                        width="200"
                         height="75"
                         fill="rgba(0,0,0,0.9)"
                         rx="10"
@@ -493,7 +425,7 @@ export default function ProfilePage() {
                 </div>
               </div>
               {auditRatioData.length > 20 && (
-                <p className="text-pink-400 text-xs mt-1">Showing last 20 audit points</p>
+                <p className="text-pink-400 text-xs mt-1">Showing only last 20 audits</p>
               )}
             </div>
           </div>

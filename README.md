@@ -213,8 +213,3 @@ This project is made by Salah Yuksel.
 ---
 
 **Built with ❤️ using Next.js, GraphQL, and modern web technologies**
-
-
-## To do:
-- remove unused parts of the code
-- error page design, why is it white
