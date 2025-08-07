@@ -51,8 +51,8 @@ export default function ProfilePage() {
       const [xpData, progressData, auditsMadeData, auditsGotData] = await Promise.all([
         graphqlQuery<{ transaction: Transaction[] }>(GET_XP_TRANSACTIONS, { userId }),
         graphqlQuery<{ progress: Progress[] }>(GET_PROGRESS, { userId }),
-        graphqlQuery<{ transaction: AuditsMade[] }>(AUDITS_MADE, { login: user.login }), // returns transaction array
-        graphqlQuery<{ transaction: AuditsGot[] }>(AUDITS_GOT, { login: user.login }) // returns transaction array
+        graphqlQuery<{ transaction: AuditsMade[] }>(AUDITS_MADE, { login: user.login }), 
+        graphqlQuery<{ transaction: AuditsGot[] }>(AUDITS_GOT, { login: user.login })
       ]);
 
       console.log("Raw audits made data:", auditsMadeData);
@@ -71,36 +71,43 @@ export default function ProfilePage() {
       const auditsGotTotalAmount = auditsGot.reduce((total: number, audit: AuditsGot) => {
         return total + (audit.amount || 0);
       }, 0);
-      
-      console.log("Audits Made Total Amount:", auditsMadeTotalAmount);
-      console.log("Audits Got Total Amount:", auditsGotTotalAmount);      
-      const auditsMadeLength = Array.isArray(auditsMade) ? auditsMade.length : 0;
-      const auditsGotLength = Array.isArray(auditsGot) ? auditsGot.length : 0;
-
-      console.log("Audits Made:", auditsMade);
-      console.log("Audits Made Length:", auditsMadeLength);
-      console.log("Audits Got:", auditsGot);
-      console.log("Audits Got Length:", auditsGotLength);
-
+        
       let xpTransactions = xpData.transaction || [];
       xpTransactions = xpTransactions.map(tx => ({
-        ...tx,
-        amount: Math.round(tx.amount / 1000)
+        ...tx, 
+        amount: tx.amount
       }));
 
-      const totalXP = xpTransactions.reduce((acc, tx) => acc + tx.amount, 0);
+      let totalXP = xpTransactions.reduce((acc, tx) => acc + tx.amount, 0);
+      let value = "";
+      switch (true) {
+        case (totalXP >= 0 && totalXP < 1000):
+          value = "B";
+          break;
+        case (totalXP >= 1000 && totalXP <= 999999):
+          totalXP /= 1000; // Convert to KB
+          value = "KB";
+          break;
+        case (totalXP >= 1000000 && totalXP <= 999999999):
+          totalXP /= 1000000; // Convert to MB
+          value = "MB";
+          break;
+        // Can add more cases for GB, TB, etc. if needed
+        default:
+          throw new Error("Total XP is out of expected range");
+      }
+      console.log("Total XP (value):", value);
+      totalXP = Math.floor(totalXP);
       let totalXPStr = totalXP.toLocaleString();
-      totalXPStr += " KB";
-      console.log("Total XP:", totalXPStr);
+      console.log("Total XP (1):", totalXPStr);
+      totalXPStr += ` ${value}`;
+      console.log("Total XP (2):", totalXPStr);
 
       const progress = progressData.progress || [];
       console.log("Progress Data:", progress);
-
       const processedXP = processXPData(xpTransactions); // to get the right format for the profile data
       console.log("Processed XP Data:", processedXP);
-      const skills = extractSkills(progress); // might just remove the whole thing
-      console.log("Extracted Skills:", skills);
-      const auditRatio = calculateAuditRatio(auditsMadeTotalAmount, auditsGotTotalAmount); // need to fix this info
+      const auditRatio = calculateAuditRatio(auditsMadeTotalAmount, auditsGotTotalAmount);
       console.log("Audit Ratio:", auditRatio);
       
 
@@ -257,7 +264,7 @@ export default function ProfilePage() {
           </div>
           <div className="stat-card audit-card">
             <h3>Audit Ratio</h3>
-            <div className="stat-value audit">{profile.auditRatio.toFixed(2)}</div>
+            <div className="stat-value audit">{profile.auditRatio.toFixed(1)}</div>
             <p className="text-gray-400 mt-2">Current audit performance</p>
           </div>
           <div className="stat-card user-card">

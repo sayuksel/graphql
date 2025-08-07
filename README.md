@@ -216,4 +216,5 @@ This project is made by Salah Yuksel.
 
 
 ## To do:
-- host it
+- remove unused parts of the code
+- error page design, why is it white
