@@ -85,8 +85,6 @@ export default function ProfilePage() {
       });
 
     } catch (err: any) {
-      console.error("Error loading profile:", err);
-      
       if (err.message.includes('Authentication') || err.message.includes('log in again')) {
         signOut();
         router.replace("/login");
@@ -216,7 +214,7 @@ export default function ProfilePage() {
           {/* XP Progress Chart */}
           <div className="chart-container">
             <h2>XP Progress Over Time</h2>
-            <svg width="100%" height="400" viewBox="0 0 480 400" className="w-full">
+            <svg width="100%" height="400" viewBox="0 0 520 400" className="w-full">
               {displayedXPData.length > 1 && (
                 <>
                   {/* Grid lines */}
@@ -229,21 +227,25 @@ export default function ProfilePage() {
                       <stop offset="100%" stopColor="#8b5cf6" />
                     </linearGradient>
                   </defs>
-                  <rect width="480" height="400" fill="url(#xpGrid)" />
+                  <rect x="60" width="440" height="360" fill="url(#xpGrid)" />
                   
                   {/* XP Progress line */}
                   <polyline
                     fill="none"
                     stroke="url(#xpGradient)"
                     strokeWidth="5"
-                    points={xpPoints}
+                    points={displayedXPData.map((data, i) => {
+                      const x = 60 + (i / (displayedXPData.length - 1)) * 440; // Offset by 60px for y-axis labels
+                      const y = 20 + (1 - (data.cumulative / maxXP)) * 340; // Offset by 20px from top
+                      return `${x},${y}`;
+                    }).join(" ")}
                     style={{ filter: 'drop-shadow(0 0 10px rgba(59, 130, 246, 0.6))' }}
                   />
                   
                   {/* Interactive points */}
                   {displayedXPData.map((data, i) => {
-                    const x = (i / (displayedXPData.length - 1)) * 460;
-                    const y = 380 - (data.cumulative / maxXP) * 360;
+                    const x = 60 + (i / (displayedXPData.length - 1)) * 440;
+                    const y = 20 + (1 - (data.cumulative / maxXP)) * 340;
                     return (
                       <circle
                         key={i}
@@ -270,26 +272,26 @@ export default function ProfilePage() {
                   {hoveredXPPoint !== null && (
                     <g>
                       <rect
-                        x="20"
-                        y="20"
+                        x="80"
+                        y="40"
                         width="170"
                         height="85"
                         fill="rgba(0,0,0,0.9)"
                         rx="10"
                         style={{ filter: 'drop-shadow(0 4px 20px rgba(0,0,0,0.5))' }}
                       />
-                      <text x="35" y="45" fontSize="14" fill="#3b82f6" fontWeight="600">
+                      <text x="95" y="65" fontSize="14" fill="#3b82f6" fontWeight="600">
                         {displayedXPData[hoveredXPPoint].date.toLocaleDateString()}
                       </text>
-                      <text x="35" y="65" fontSize="12" fill="white">
+                      <text x="95" y="85" fontSize="12" fill="white">
                         Project: {displayedXPData[hoveredXPPoint].project.length > 18 
                           ? displayedXPData[hoveredXPPoint].project.substring(0, 18) + '...' 
                           : displayedXPData[hoveredXPPoint].project}
                       </text>
-                      <text x="35" y="80" fontSize="12" fill="#10b981">
+                      <text x="95" y="100" fontSize="12" fill="#10b981">
                         XP Gained: {displayedXPData[hoveredXPPoint].amount}
                       </text>
-                      <text x="35" y="95" fontSize="12" fill="#8b5cf6">
+                      <text x="95" y="115" fontSize="12" fill="#8b5cf6">
                         Total XP: {displayedXPData[hoveredXPPoint].cumulative}
                       </text>
                     </g>
@@ -303,11 +305,43 @@ export default function ProfilePage() {
                 </text>
               )}
               
-              {/* Axis labels */}
-              <text x="10" y="390" fontSize="14" fill="rgba(255,255,255,0.7)">Start</text>
-              <text x="440" y="390" fontSize="14" fill="rgba(255,255,255,0.7)">Recent</text>
-              <text x="20" y="25" fontSize="14" fill="rgba(255,255,255,0.7)">{profile.totalXP}</text>
-              <text x="20" y="375" fontSize="14" fill="rgba(255,255,255,0.7)">0</text>
+              {/* X-axis labels */}
+              {displayedXPData.map((data, i) => {
+                if (i % 4 === 0 || i === displayedXPData.length - 1) {
+                  const x = 60 + (i / (displayedXPData.length - 1)) * 440;
+                  return (
+                    <text 
+                      key={i} 
+                      x={x} 
+                      y="390" 
+                      fontSize="12" 
+                      fill="rgba(255,255,255,0.7)" 
+                      textAnchor="middle"
+                    >
+                      {data.date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                    </text>
+                  );
+                }
+                return null;
+              })}
+              
+              {/* Y-axis labels for XP */}
+              {[0, 0.25, 0.5, 0.75, 1].map((ratio, i) => {
+                const y = 20 + (1 - ratio) * 340; // Calculate y position with new offset
+                const xpValue = Math.round(maxXP * ratio);
+                return (
+                  <text 
+                    key={i} 
+                    x="10" 
+                    y={y + 5} 
+                    fontSize="12" 
+                    fill="rgba(255,255,255,0.7)" 
+                    textAnchor="start"
+                  >
+                    {xpValue.toLocaleString()}
+                  </text>
+                );
+              })}
             </svg>
             <div className="mt-4 text-sm text-gray-300">
               <div className="flex justify-between items-center">
@@ -323,7 +357,7 @@ export default function ProfilePage() {
           {/* Audit Ratio Over Time Chart */}
           <div className="chart-container">
             <h2>Audit Ratio Over Time</h2>
-            <svg width="100%" height="400" viewBox="0 0 480 400" className="w-full">
+            <svg width="100%" height="400" viewBox="0 0 520 400" className="w-full">
               {displayedAuditData.length > 1 && (
                 <>
                   {/* Grid lines */}
@@ -336,21 +370,25 @@ export default function ProfilePage() {
                       <stop offset="100%" stopColor="#ec4899" />
                     </linearGradient>
                   </defs>
-                  <rect width="480" height="400" fill="url(#auditGrid)" />
+                  <rect x="60" width="440" height="360" fill="url(#auditGrid)" />
                   
                   {/* Audit ratio line */}
                   <polyline
                     fill="none"
                     stroke="url(#auditGradient)"
                     strokeWidth="5"
-                    points={auditRatioPoints}
+                    points={displayedAuditData.map((data, i) => {
+                      const x = 60 + (i / (displayedAuditData.length - 1 || 1)) * 440; // Offset by 60px for y-axis labels
+                      const y = 20 + (1 - (data.ratio / maxRatio)) * 340; // Offset by 20px from top
+                      return `${x},${y}`;
+                    }).join(" ")}
                     style={{ filter: 'drop-shadow(0 0 10px rgba(139, 92, 246, 0.6))' }}
                   />
                   
                   {/* Interactive points */}
                   {displayedAuditData.map((data, i) => {
-                    const x = (i / (displayedAuditData.length - 1)) * 460;
-                    const y = 380 - (data.ratio / maxRatio) * 360;
+                    const x = 60 + (i / (displayedAuditData.length - 1)) * 440;
+                    const y = 20 + (1 - (data.ratio / maxRatio)) * 340;
                     return (
                       <circle
                         key={i}
@@ -379,21 +417,21 @@ export default function ProfilePage() {
                   {hoveredAuditPoint !== null && (
                     <g>
                       <rect
-                        x="20"
-                        y="20"
+                        x="80"
+                        y="40"
                         width="200"
                         height="75"
                         fill="rgba(0,0,0,0.9)"
                         rx="10"
                         style={{ filter: 'drop-shadow(0 4px 20px rgba(0,0,0,0.5))' }}
                       />
-                      <text x="35" y="45" fontSize="14" fill="#8b5cf6" fontWeight="600">
+                      <text x="95" y="65" fontSize="14" fill="#8b5cf6" fontWeight="600">
                         {displayedAuditData[hoveredAuditPoint].date.toLocaleDateString()}
                       </text>
-                      <text x="35" y="65" fontSize="12" fill="white">
+                      <text x="95" y="85" fontSize="12" fill="white">
                         Ratio: {displayedAuditData[hoveredAuditPoint].ratio.toFixed(2)}
                       </text>
-                      <text x="35" y="80" fontSize="12" fill="#10b981">
+                      <text x="95" y="100" fontSize="12" fill="#10b981">
                         Made: {Math.round(displayedAuditData[hoveredAuditPoint].made)} | Got: {Math.round(displayedAuditData[hoveredAuditPoint].got)}
                       </text>
                     </g>
@@ -407,11 +445,43 @@ export default function ProfilePage() {
                 </text>
               )}
               
-              {/* Axis labels */}
-              <text x="10" y="390" fontSize="14" fill="rgba(255,255,255,0.7)">Start</text>
-              <text x="440" y="390" fontSize="14" fill="rgba(255,255,255,0.7)">Recent</text>
-              <text x="20" y="25" fontSize="14" fill="rgba(255,255,255,0.7)">{profile.auditRatio.toFixed(1)}</text>
-              <text x="20" y="375" fontSize="14" fill="rgba(255,255,255,0.7)">0</text>
+              {/* X-axis labels */}
+              {displayedAuditData.map((data, i) => {
+                if (i % 4 === 0 || i === displayedAuditData.length - 1) {
+                  const x = 60 + (i / (displayedAuditData.length - 1 || 1)) * 440;
+                  return (
+                    <text 
+                      key={i} 
+                      x={x} 
+                      y="390" 
+                      fontSize="12" 
+                      fill="rgba(255,255,255,0.7)" 
+                      textAnchor="middle"
+                    >
+                      {data.date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                    </text>
+                  );
+                }
+                return null;
+              })}
+              
+              {/* Y-axis labels for Audit Ratio */}
+              {[0, 0.25, 0.5, 0.75, 1].map((ratio, i) => {
+                const y = 20 + (1 - ratio) * 340; // Calculate y position with new offset
+                const ratioValue = (maxRatio * ratio).toFixed(1);
+                return (
+                  <text 
+                    key={i} 
+                    x="10" 
+                    y={y + 5} 
+                    fontSize="12" 
+                    fill="rgba(255,255,255,0.7)" 
+                    textAnchor="start"
+                  >
+                    {ratioValue}
+                  </text>
+                );
+              })}
             </svg>
             <div className="mt-4 text-sm text-gray-300">
               <div className="space-y-2">

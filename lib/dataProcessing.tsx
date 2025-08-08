@@ -1,4 +1,4 @@
-import { Transaction, Progress, Result } from './types';
+import { Transaction, Progress } from './types';
 
 export function processXPData(transactions: Transaction[]) {
   let cumulativeXP = 0;
@@ -16,24 +16,22 @@ export function processXPData(transactions: Transaction[]) {
 export function formatXPWithUnits(totalXP: number) {
   let value = "";
   let formattedXP = totalXP;
-  
   switch (true) {
     case (totalXP >= 0 && totalXP < 1000):
       value = "B";
       break;
-    case (totalXP >= 1000 && totalXP <= 999999):
+    case (totalXP >= 1000 && totalXP < 1000000):
       formattedXP = totalXP / 1000;
       value = "KB";
       break;
-    case (totalXP >= 1000000 && totalXP <= 999999999):
+    case (totalXP >= 1000000 && totalXP < 1000000000):
       formattedXP = totalXP / 1000000;
       value = "MB";
       break;
     default:
       throw new Error("Total XP is out of expected range");
   }
-  
-  const finalValue = Math.floor(formattedXP);
+  const finalValue = formattedXP;
   return {
     value: finalValue,
     unit: value,
@@ -82,13 +80,6 @@ export function extractSkills(progress: Progress[]) {
       skillsSet.add(pathParts[2]);
     }
   });
-  
-  // results.forEach(r => {
-  //   const pathParts = r.path.split('/');
-  //   if (pathParts.length > 2) {
-  //     skillsSet.add(pathParts[2]);
-  //   }
-  // });
   
   return Array.from(skillsSet).filter(skill => skill && skill !== 'div-01');
 }
